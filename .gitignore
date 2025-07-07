@@ -176,3 +176,7 @@ cython_debug/
 *.xlsx
 .DS_Store
 /chroma_db
+
+.ipynb
+
+.zip

@@ -1,0 +1,30 @@
+# Python 가상 환경
+.venv
+venv
+*/.venv
+*/venv
+
+# Git 관련 파일
+.git
+.gitignore
+
+# Python 캐시 파일
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# IDE/에디터 설정 폴더
+.idea/
+.vscode/
+
+# Jupyter Notebook 체크포인트
+.ipynb_checkpoints/
+
+# macOS 시스템 파일
+.DS_Store
+
+# 환경변수 파일 (런타임에 주입되므로 이미지에 포함 X)
+.env
+
+.zip
