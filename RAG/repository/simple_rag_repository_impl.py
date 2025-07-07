@@ -5,7 +5,7 @@ import time  # 로깅 및 타임스탬프 등에 사용 가능
 from pathlib import Path
 from dotenv import load_dotenv
 from typing import AsyncGenerator, Optional, List, Dict
-
+import chromadb
 from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
 from langchain_chroma import Chroma
@@ -82,7 +82,7 @@ class RAGRepositoryImpl(RAGRepository):
                                                     streaming=False)
 
         if RAGRepositoryImpl._embed_model_instance is None:
-            embedding_model_name = os.getenv("EMBEDDING_MODEL")
+            embedding_model_name = os.getenv("EMBEDDING_MODEL",'dragonkue/snowflake-arctic-embed-l-v2.0-ko')
             if not embedding_model_name: raise ValueError("EMBEDDING_MODEL 환경 변수 누락")
             RAGRepositoryImpl._embed_model_instance = SentenceTransformer(embedding_model_name)
             print(f"--- Embedding model '{embedding_model_name}' loaded. ---")
@@ -94,10 +94,7 @@ class RAGRepositoryImpl(RAGRepository):
         print("✅ LLM, Embedding, Reranker 모델 초기화 완료.")
 
     def _initialize_db(self):
-        print("--- RAGRepositoryImpl: DB 초기화 중... ---")
-        project_root = Path(__file__).resolve().parent.parent.parent
-        persist_dir = project_root / "chroma_db"
-        print(f"--- ChromaDB 경로 설정: {persist_dir} ---")
+        print("--- RAGRepositoryImpl: DB 초기화 중 (클라이언트-서버 모드) ---")
 
         class MyEmbeddings:
             def __init__(self, model_instance: SentenceTransformer): self.model = model_instance
@@ -108,15 +105,25 @@ class RAGRepositoryImpl(RAGRepository):
             def embed_query(self, text: str) -> List[float]: return self.model.encode([text], convert_to_numpy=True)[
                 0].tolist()
 
-        if RAGRepositoryImpl._embed_model_instance is None: raise RuntimeError("Embedding model not initialized.")
+        if RAGRepositoryImpl._embed_model_instance is None:
+            raise RuntimeError("Embedding model not initialized.")
+
+        # Docker Compose 네트워크 내에서 서비스 이름(chromadb)으로 서버에 접속합니다.
+        # .env 파일 등에서 호스트와 포트를 관리하는 것도 좋은 방법입니다.
+        db_host = os.getenv("CHROMA_DB_HOST", "chromadb")
+        db_port = int(os.getenv("CHROMA_DB_PORT", 8000))
+
+        print(f"--- ChromaDB 서버에 연결 시도: host='{db_host}', port={db_port} ---")
+        client = chromadb.HttpClient(host=db_host, port=db_port)
+
+        collection_name = os.getenv("CHROMA_COLLECTION", "construction_new")
         self._collection = Chroma(
-            persist_directory=str(persist_dir),
-            collection_name=os.getenv("CHROMA_COLLECTION", "construction_new"),
+            client=client,
+            collection_name=collection_name,
             embedding_function=MyEmbeddings(RAGRepositoryImpl._embed_model_instance),
         )
-        collection_name_to_print = self._collection.name if hasattr(self._collection,
-                                                                    'name') else self._collection._collection.name
-        print(f"✅ Chroma DB connected at {persist_dir}, collection='{collection_name_to_print}'")
+
+        print(f"✅ ChromaDB 서버에 연결 완료. Collection='{collection_name}'")
 
     def _format_korean_text_chunk(self, text: str) -> str:  # 이전과 동일
         if not text: return ""

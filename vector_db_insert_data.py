@@ -1,3 +1,4 @@
+import os
 import zipfile
 from pathlib import Path
 import pandas as pd
@@ -132,12 +133,15 @@ class StrictEmbeddingFunction(EmbeddingFunction):  # 클래스 이름 변경
 
 embedding_function_instance = StrictEmbeddingFunction(model=sbert_model_instance)  # 인스턴스 생성
 
-# 4. ChromaDB 클라이언트 생성
-client = chromadb.PersistentClient(path="./chroma_db")
 
+db_host = os.getenv("CHROMA_DB_HOST", "chromadb")
+db_port = int(os.getenv("CHROMA_DB_PORT", 8000))
+
+# 4. ChromaDB 클라이언트 생성
+client = chromadb.HttpClient(host=db_host, port=db_port)
+collection_name = os.getenv("CHROMA_COLLECTION", "construction_new")
 # 5. 컬렉션 생성 또는 가져오기
 print("5. 컬렉션 생성/로드 시도 중...")
-collection_name = "construction"  # 컬렉션 이름 변경
 try:
     if hasattr(embedding_function_instance, '__call__'):
         print(
