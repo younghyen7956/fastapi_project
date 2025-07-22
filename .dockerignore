@@ -23,8 +23,4 @@ __pycache__/
 
 # macOS 시스템 파일
 .DS_Store
-
-# 환경변수 파일 (런타임에 주입되므로 이미지에 포함 X)
-.env
-
 .zip
