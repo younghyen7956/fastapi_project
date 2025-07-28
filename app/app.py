@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 
 from RAG.controller.simply_rag_controller import RAGRouter
 from RAG.repository.simple_rag_repository_impl import RAGRepositoryImpl
+# from RAG.repository.save_bge_repository_impl import RAGRepositoryImpl
 
 load_dotenv()
 app = FastAPI(debug=True)
@@ -29,5 +30,5 @@ async def on_startup():
 
 if __name__ == "__main__":
     host = os.getenv("FASTAPI_HOST", "0.0.0.0")
-    port = int(os.getenv("FASTAPI_PORT", 8000))
+    port = int(os.getenv("FASTAPI_PORT", 8080))
     uvicorn.run(app, host=host, port=port, log_level="debug")
