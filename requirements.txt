@@ -24,3 +24,4 @@ python-dotenv
 numpy
 typing-extensions
 openpyxl
+redis

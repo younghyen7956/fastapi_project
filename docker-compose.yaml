@@ -9,19 +9,24 @@ services:
     env_file:
       - .env
     depends_on:
-      - chromadb
+      qdrant_db:
+        condition: service_started
+      redis_db:
+        condition: service_started
 
-  chromadb:
-    image: chromadb/chroma
-    container_name: chromadb_server
+  qdrant_db: # 서비스 이름을 qdrant에서 qdrant_db로 명시적으로 변경 (rag-api의 depends_on과 일관성)
+    image: qdrant/qdrant:latest
     ports:
-      - "8000:8000"
+      - "6333:6333"
+      - "6334:6334"
     volumes:
-      # ChromaDB 데이터를 영구적으로 보존하기 위한 볼륨
-      - chroma_server_data:/chroma
-    # [수정] 공식 이미지의 실행 방식으로 변경
-    command: run --host 0.0.0.0 --port 8000
+      - ./qdrant_data:/qdrant/storage # Qdrant 데이터의 지속성을 위해 볼륨 마운트
+    container_name: qdrant_db
 
-volumes:
-  chroma_server_data:
-    driver: local
+  redis_db:
+    image: redis:latest # 공식 Redis 이미지 사용
+    container_name: redis_db
+    ports:
+      - "6379:6379" # 로컬에서 Redis를 직접 확인하고 싶을 때 사용
+    volumes:
+      - ./redis_data:/data # Redis 데이터의 지속성을 위해 볼륨 마운트
