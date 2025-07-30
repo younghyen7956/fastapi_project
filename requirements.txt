@@ -16,8 +16,7 @@ torch
 torchaudio
 torchvision
 
-# ChromaDB
-chromadb
+qdrant-client
 
 # Utilities
 python-dotenv
@@ -25,3 +24,4 @@ numpy
 typing-extensions
 openpyxl
 redis
+python-multipart
