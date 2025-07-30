@@ -1,0 +1,44 @@
+version: '3.8' # 최신 버전 명시
+
+services:
+  rag-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rag_api_container
+    ports:
+      - "8282:8080" # ✨ 포트 매핑 수정: 호스트 8282 -> 컨테이너 8080
+    env_file:
+      - .env
+    # ✨ GPU 사용을 위한 deploy 설정 추가 ✨
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    depends_on:
+      qdrant_db:
+        condition: service_started
+      redis_db:
+        condition: service_started
+
+  qdrant_db:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - ./qdrant_data:/qdrant/storage
+    container_name: qdrant_db
+    restart: unless-stopped
+
+  redis_db:
+    image: redis:latest
+    container_name: redis_db
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis_data:/data
+    restart: unless-stopped
