@@ -25,3 +25,5 @@ typing-extensions
 openpyxl
 redis
 python-multipart
+vllm
+autoawq
