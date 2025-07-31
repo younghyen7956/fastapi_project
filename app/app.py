@@ -10,6 +10,7 @@ from RAG.repository.simple_rag_repository_impl import RAGRepositoryImpl
 # from RAG.repository.simple_rag_repository_impl import RAGRepositoryImpl # 사용하지 않으므로 주석 처리
 from VLRag.controller.vl_rag_controller import VlRAGRouter
 from VLRag.repository.vl_rag_repository_impl import VlRAGRepositoryImpl
+from ocr_vl_rag.controller.ocr_rag_controller import OcrRAGRouter
 
 load_dotenv()
 
@@ -42,6 +43,7 @@ app.add_middleware(
 )
 app.include_router(RAGRouter)
 app.include_router(VlRAGRouter)
+app.include_router(OcrRAGRouter)
 
 if __name__ == "__main__":
     host = os.getenv("FASTAPI_HOST", "0.0.0.0")
