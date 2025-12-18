@@ -1,18 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Form, File, UploadFile
 from fastapi.responses import StreamingResponse
-from typing import AsyncGenerator
-from pydantic import BaseModel
+from typing import AsyncGenerator, Optional
 import asyncio
-import json  # json 임포트가 필요할 수 있습니다.
+import json
+import base64  # base64 인코딩을 위해 추가합니다.
 from ocr_vl_rag.service.ocr_rag_service_impl import OcrRAGServiceImpl
 
 OcrRAGRouter = APIRouter()
 
 
-# 요청 바디 모델 확장
-class StreamRequestBody(BaseModel):
-    query: str
-    session_id: str  # ✨ 수정된 부분
+# StreamRequestBody 모델은 더 이상 필요하지 않습니다.
 
 def injectSearchService() -> OcrRAGServiceImpl:
     return OcrRAGServiceImpl.getInstance()
@@ -20,29 +17,43 @@ def injectSearchService() -> OcrRAGServiceImpl:
 
 @OcrRAGRouter.post(
     "/stream_ocr_vl",
-    summary="POST 방식으로 query, session_id 등을 JSON 바디로 받아 토큰 스트리밍",
+    summary="POST 방식으로 query, session_id, image 등을 Form-data로 받아 토큰 스트리밍",
 )
 async def stream_rag(
-        body: StreamRequestBody,
         request: Request,
+        # JSON 본문(body) 대신 Form 데이터와 File을 직접 받습니다.
+        query: str = Form(...),
+        session_id: str = Form(...),
+        # 이미지는 선택적으로 받을 수 있도록 Optional[UploadFile]로 설정합니다.
+        image: Optional[UploadFile] = File(None),
         service: OcrRAGServiceImpl = Depends(injectSearchService),
 ) -> StreamingResponse:
-    print(f"--- ✅ FastAPI /stream endpoint CALLED with query: '{body.query}' for session: {body.session_id} ---")
+    print(f"--- ✅ FastAPI /stream endpoint CALLED with query: '{query}' for session: {session_id} ---")
+
+    # 이미지가 첨부되었는지 확인하고, base64로 인코딩합니다.
+    image_data_b64: Optional[str] = None
+    if image:
+        print(f"--- 🖼️ Received image: {image.filename} ({image.content_type}) ---")
+        image_bytes = await image.read()
+        image_data_b64 = base64.b64encode(image_bytes).decode("utf-8")
+        print("--- ✅ Image encoded to base64 successfully. ---")
 
     async def event_generator() -> AsyncGenerator[str, None]:
         print("--- ✨ FastAPI event_generator started ---")
         try:
-            # 서비스 호출 시 모든 파라미터 전달
-            async for token in service.text_Generate(
-                    query=body.query,
-                    session_id=body.session_id,  # ✨ 수정된 부분
+            # 서비스 호출 시 모든 파라미터를 전달합니다.
+            # 서비스의 text_Generate 메서드가 image_data를 받을 수 있도록 수정해야 합니다.
+            async for token_data in service.text_Generate(
+                    query=query,
+                    session_id=session_id,
+                    image_data=image_data_b64,  # 인코딩된 이미지 데이터 전달
             ):
                 if await request.is_disconnected():
                     print("--- ⚠️ Client disconnected, stopping event_generator. ---")
                     break
 
-                # FastAPI 에서는 데이터를 json 형식으로 감싸서 보내는 것이 안정적입니다.
-                yield f"data: {json.dumps({'token': token})}\n\n"
+                # Repository의 generate 메서드가 JSON 문자열을 yield 하므로 그대로 전달합니다.
+                yield token_data
 
         except asyncio.CancelledError:
             print("--- ⚠️ FastAPI event_generator: Task was cancelled (client likely disconnected). ---")

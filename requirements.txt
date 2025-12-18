@@ -6,7 +6,6 @@ uvicorn[standard]
 langchain
 langchain-core
 langchain-openai
-langchain-chroma
 langgraph
 
 # RAG Core Models

@@ -11,6 +11,7 @@ from RAG.repository.simple_rag_repository_impl import RAGRepositoryImpl
 from VLRag.controller.vl_rag_controller import VlRAGRouter
 from VLRag.repository.vl_rag_repository_impl import VlRAGRepositoryImpl
 from ocr_vl_rag.controller.ocr_rag_controller import OcrRAGRouter
+from ocr_vl_rag.repository.ocr_rag_repository_impl import OcrRAGRepositoryImpl
 
 load_dotenv()
 
@@ -20,8 +21,9 @@ load_dotenv()
 async def lifespan(app: FastAPI):
     # --- 애플리케이션 시작 시 실행될 코드 ---
     print("--- 🚀 FastAPI 애플리케이션 시작 (lifespan) ---")
-    #RAGRepositoryImpl.getInstance()
-    VlRAGRepositoryImpl.getInstance()  # 모델 및 리소스 초기화
+    # RAGRepositoryImpl.getInstance()
+    # VlRAGRepositoryImpl.getInstance()
+    OcrRAGRepositoryImpl.getInstance()# 모델 및 리소스 초기화
     print("✅ VlRAG Repository 초기화 완료.")
 
     yield  # 이 시점에서 애플리케이션이 실행됩니다.
